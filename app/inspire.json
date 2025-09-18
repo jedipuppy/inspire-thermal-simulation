@@ -1,0 +1,192 @@
+{
+  "nodes": [
+    {
+      "id": "node-1",
+      "name": "Satellite",
+      "initialTemp": 25,
+      "heatCapacity": 100,
+      "isFixed": true,
+      "fixedTemp": 50,
+      "position": {
+        "x": -388.8102706542262,
+        "y": -102.24717004476577
+      }
+    },
+    {
+      "id": "node-2",
+      "name": "Al frame bottom",
+      "initialTemp": 35,
+      "heatCapacity": 120,
+      "isFixed": false,
+      "fixedTemp": 35,
+      "position": {
+        "x": -102.08163446416091,
+        "y": -104.88285194973317
+      }
+    },
+    {
+      "id": "node-3",
+      "name": "Al frame side",
+      "initialTemp": 25,
+      "heatCapacity": 100,
+      "isFixed": false,
+      "fixedTemp": 25,
+      "position": {
+        "x": 239.67833883598212,
+        "y": -105.87582879215616
+      }
+    },
+    {
+      "id": "node-4",
+      "name": "Al frame top",
+      "initialTemp": 25,
+      "heatCapacity": 100,
+      "isFixed": false,
+      "fixedTemp": 25,
+      "position": {
+        "x": 547.0481025187427,
+        "y": -103.9329361091637
+      }
+    },
+    {
+      "id": "node-5",
+      "name": "BGO bottom",
+      "initialTemp": 25,
+      "heatCapacity": 100,
+      "isFixed": false,
+      "fixedTemp": 25,
+      "position": {
+        "x": 140.65892162550654,
+        "y": 32.59985635793993
+      }
+    },
+    {
+      "id": "node-6",
+      "name": "BGO side",
+      "initialTemp": 25,
+      "heatCapacity": 100,
+      "isFixed": false,
+      "fixedTemp": 25,
+      "position": {
+        "x": 122.90323749735103,
+        "y": 350.70559381949965
+      }
+    },
+    {
+      "id": "node-7",
+      "name": "GAGG rear",
+      "initialTemp": 25,
+      "heatCapacity": 100,
+      "isFixed": false,
+      "fixedTemp": 25,
+      "position": {
+        "x": 499.95146996386416,
+        "y": 90.52801454074728
+      }
+    },
+    {
+      "id": "node-8",
+      "name": "GAGG side",
+      "initialTemp": 25,
+      "heatCapacity": 100,
+      "isFixed": false,
+      "fixedTemp": 25,
+      "position": {
+        "x": 411.83686989545924,
+        "y": 356.36814741926884
+      }
+    },
+    {
+      "id": "node-9",
+      "name": "GAGG front",
+      "initialTemp": 25,
+      "heatCapacity": 100,
+      "isFixed": false,
+      "fixedTemp": 25,
+      "position": {
+        "x": 706.6947521531982,
+        "y": 360.3705380676617
+      }
+    },
+    {
+      "id": "node-10",
+      "name": "space",
+      "initialTemp": 25,
+      "heatCapacity": 100,
+      "isFixed": true,
+      "fixedTemp": -20,
+      "position": {
+        "x": 925.2654504855055,
+        "y": 80.42029252991563
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "id-a6ee3569a49cf-1758187416434",
+      "source": "node-1",
+      "target": "node-2",
+      "conductance": 10
+    },
+    {
+      "id": "id-e172292d1debf-1758194638133",
+      "source": "node-2",
+      "target": "node-3",
+      "conductance": 50
+    },
+    {
+      "id": "id-b21bb9bebb37e-1758194640420",
+      "source": "node-3",
+      "target": "node-4",
+      "conductance": 50
+    },
+    {
+      "id": "id-3730a2c8b2378-1758194670981",
+      "source": "node-2",
+      "target": "node-5",
+      "conductance": 5
+    },
+    {
+      "id": "id-8a9bf61f615fe-1758194677049",
+      "source": "node-5",
+      "target": "node-7",
+      "conductance": 1
+    },
+    {
+      "id": "id-cb16c8ed7b8598-1758194863649",
+      "source": "node-6",
+      "target": "node-8",
+      "conductance": 1
+    },
+    {
+      "id": "id-983e2bb3666b68-1758194958850",
+      "source": "node-8",
+      "target": "node-9",
+      "conductance": 0.2
+    },
+    {
+      "id": "id-ac99c3ff62122-1758195199367",
+      "source": "node-9",
+      "target": "node-10",
+      "conductance": 5
+    },
+    {
+      "id": "id-d94fbbdbd093d8-1758195227715",
+      "source": "node-7",
+      "target": "node-9",
+      "conductance": 0.2
+    },
+    {
+      "id": "id-f2864b0ea013e8-1758195253184",
+      "source": "node-4",
+      "target": "node-10",
+      "conductance": 5
+    },
+    {
+      "id": "id-fbf69b49e5f17-1758195731823",
+      "source": "node-3",
+      "target": "node-6",
+      "conductance": 5
+    }
+  ]
+}

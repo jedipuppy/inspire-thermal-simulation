@@ -1,0 +1,39 @@
+{
+  "cssVariables": {
+    "--panel-background": "#ffffff",
+    "--panel-shadow": "0 10px 25px rgba(15, 23, 42, 0.08)",
+    "--panel-text": "#0f172a",
+    "--muted-text": "#475569",
+    "--surface-border": "#e2e8f0",
+    "--scrollbar-thumb": "#cbd5f5",
+    "--primary-bg": "#2563eb",
+    "--primary-bg-hover": "#1d4ed8",
+    "--primary-text": "#f8fafc",
+    "--ghost-border": "#d0d7e2",
+    "--ghost-hover": "#f1f5f9",
+    "--danger-text": "#dc2626"
+  },
+  "node": {
+    "default": {
+      "background": "#e0f2fe",
+      "border": "#0284c7",
+      "text": "#0f172a"
+    },
+    "fixed": {
+      "background": "#fef3c7",
+      "border": "#f59e0b",
+      "text": "#92400e"
+    },
+    "shape": {
+      "padding": 12,
+      "borderRadius": 12,
+      "fontSize": 13,
+      "fontWeight": 600,
+      "boxShadow": "0 8px 16px rgba(2, 132, 199, 0.18)"
+    }
+  },
+  "edge": {
+    "stroke": "#0284c7",
+    "strokeWidth": 2.5
+  }
+}
