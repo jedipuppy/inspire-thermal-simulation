@@ -380,7 +380,7 @@ const ThermalNode = ({ id, data, selected }: NodeProps<ThermalNodeData>) => {
           onClick={handleRemove}
           onPointerDown={(event) => event.stopPropagation()}
         >
-          x
+          {'×'}
         </button>
       </div>
       <div className="thermal-node__body">
@@ -412,9 +412,7 @@ const ThermalNode = ({ id, data, selected }: NodeProps<ThermalNodeData>) => {
             checked={data.isFixed}
             onChange={handleFixedToggle}
             onPointerDown={(event) => event.stopPropagation()}
-          />
-          {UI_TEXT.fieldLockTemperature}
-        </label>
+          /{'×'}/label>
         <label className="thermal-node__field">
           <span>{UI_TEXT.fieldFixedTemp}</span>
           <input
@@ -1216,9 +1214,7 @@ const ThermalApp = () => {
               <button className="ghost" type="button" onClick={resetToInitialModel}>
                 {UI_TEXT.resetPreset}
               </button>
-            </div>
-          </section>
-        </aside>
+            </div{'×'}/aside>
 
         <main className="workspace">
           <section className="flow-wrapper">
@@ -1283,6 +1279,9 @@ const App = () => (
 )
 
 export default App
+
+
+
 
 
 

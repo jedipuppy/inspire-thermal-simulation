@@ -388,7 +388,7 @@ textarea:focus {
   background: var(--panel-background);
   border: 1px solid var(--surface-border);
   border-radius: 0.8rem;
-  padding: 0.8rem;
+  padding: 1.1rem 1rem;
   box-shadow: var(--panel-shadow);
   display: flex;
   flex-direction: column;
@@ -417,11 +417,11 @@ textarea:focus {
 }
 
 .thermal-node__handle--left {
-  left: -5px;
+  left: -8px;
 }
 
 .thermal-node__handle--right {
-  right: -5px;
+  right: -8px;
 }
 
 .thermal-node__header {
@@ -499,9 +499,11 @@ textarea:focus {
   border-radius: 999px;
   box-shadow: var(--panel-shadow);
   padding: 0.35rem 0.6rem;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 0.35rem;
+  width: max-content;
+  max-width: max-content;
 }
 
 .thermal-edge-label--selected {
@@ -533,3 +535,4 @@ textarea:focus {
 .thermal-edge-label__button:hover {
   color: var(--primary-bg);
 }
+
