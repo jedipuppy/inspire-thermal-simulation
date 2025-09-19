@@ -388,7 +388,7 @@ textarea:focus {
   background: var(--panel-background);
   border: 1px solid var(--surface-border);
   border-radius: 0.8rem;
-  padding: 1.1rem 1rem;
+  padding: 1.3rem 1.2rem;
   box-shadow: var(--panel-shadow);
   display: flex;
   flex-direction: column;
@@ -498,12 +498,14 @@ textarea:focus {
   border: 1px solid var(--surface-border);
   border-radius: 999px;
   box-shadow: var(--panel-shadow);
-  padding: 0.35rem 0.6rem;
+  padding: 0.4rem 0.7rem;
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
   width: max-content;
   max-width: max-content;
+  position: absolute;
+  z-index: 10;
 }
 
 .thermal-edge-label--selected {
@@ -512,8 +514,8 @@ textarea:focus {
 }
 
 .thermal-edge-label__input {
-  width: 3.25rem;
-  min-width: 3.25rem;
+  width: 2.5rem;
+  min-width: 2.5rem;
   font-size: 0.8rem;
   padding: 0.2rem 0.35rem;
   text-align: right;

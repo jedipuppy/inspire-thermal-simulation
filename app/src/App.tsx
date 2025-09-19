@@ -412,7 +412,8 @@ const ThermalNode = ({ id, data, selected }: NodeProps<ThermalNodeData>) => {
             checked={data.isFixed}
             onChange={handleFixedToggle}
             onPointerDown={(event) => event.stopPropagation()}
-          /{'×'}/label>
+          />温度を固定
+        </label>
         <label className="thermal-node__field">
           <span>{UI_TEXT.fieldFixedTemp}</span>
           <input
@@ -477,7 +478,12 @@ const ThermalEdge = ({
 
   return (
     <>
-      <BaseEdge path={edgePath} markerEnd={markerEnd} style={style} />
+      <BaseEdge
+        path={edgePath}
+        markerEnd={markerEnd}
+        style={{ ...style, strokeWidth: 3 }}
+        interactionWidth={20}
+      />
       <EdgeLabelRenderer>
         <div
           className={className}
@@ -1214,7 +1220,9 @@ const ThermalApp = () => {
               <button className="ghost" type="button" onClick={resetToInitialModel}>
                 {UI_TEXT.resetPreset}
               </button>
-            </div{'×'}/aside>
+            </div>
+          </section>
+        </aside>
 
         <main className="workspace">
           <section className="flow-wrapper">
