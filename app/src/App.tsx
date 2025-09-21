@@ -15,8 +15,18 @@ import ReactFlow, {
   getBezierPath,
 } from 'reactflow'
 import type { Connection, Edge, EdgeChange, EdgeProps, Node, NodeChange, NodeProps } from 'reactflow'
-import type { SimulationResult, SimulationSettings } from './simulation'
-import { SimulationError, simulateThermalNetwork } from './simulation'
+import type {
+  SimulationResult,
+  SimulationSettings,
+  MeasurementData,
+  ParameterEstimationSettings,
+  ParameterEstimationResult
+} from './simulation'
+import {
+  SimulationError,
+  simulateThermalNetwork,
+  estimateParameters
+} from './simulation'
 import initialModelRaw from '../inspire.json?raw'
 import styleConfigRaw from './style-config.json?raw'
 import './App.css'
@@ -147,6 +157,27 @@ const UI_TEXT = {
   delete: '\u524a\u9664',
   arrow: '\u2192',
   degree: '\u2103',
+  parameterEstimation: '\u30d1\u30e9\u30e1\u30fc\u30bf\u63a8\u5b9a',
+  sampleTest: '\u30b5\u30f3\u30d7\u30eb\u30c6\u30b9\u30c8',
+  selectScenario: '\u30c6\u30b9\u30c8\u30b7\u30ca\u30ea\u30aa\u9078\u629e',
+  runSampleTest: '\u30b5\u30f3\u30d7\u30eb\u3067\u30c6\u30b9\u30c8\u5b9f\u884c',
+  generateData: '\u30b5\u30f3\u30d7\u30eb\u30c7\u30fc\u30bf\u751f\u6210',
+  noiseLevel: '\u30ce\u30a4\u30ba\u30ec\u30d9\u30eb',
+  estimationSettings: '\u63a8\u5b9a\u8a2d\u5b9a',
+  maxIterations: '\u6700\u5927\u53cd\u5fa9\u6570',
+  tolerance: '\u53ce\u675f\u5224\u5b9a\u95fe\u5024',
+  runEstimation: '\u30d1\u30e9\u30e1\u30fc\u30bf\u63a8\u5b9a\u5b9f\u884c',
+  estimationResults: '\u63a8\u5b9a\u7d50\u679c',
+  trueValues: '\u771f\u306e\u5024',
+  estimatedValues: '\u63a8\u5b9a\u5024',
+  relativeError: '\u76f8\u5bfe\u8aa4\u5dee',
+  convergenceInfo: '\u53ce\u675f\u60c5\u5831',
+  iterations: '\u53cd\u5fa9\u56de\u6570',
+  converged: '\u53ce\u675f',
+  finalError: '\u6700\u7d42\u8aa4\u5dee',
+  notConverged: '\u672a\u53ce\u675f',
+  applyEstimatedParams: '\u63a8\u5b9a\u30d1\u30e9\u30e1\u30fc\u30bf\u3092\u53cd\u6620',
+  parametersApplied: '\u30d1\u30e9\u30e1\u30fc\u30bf\u304c\u53cd\u6620\u3055\u308c\u307e\u3057\u305f',
 } as const
 
 const numberFormatter = new Intl.NumberFormat('ja-JP', {
@@ -338,13 +369,15 @@ const ThermalNode = ({ id, data, selected }: NodeProps<ThermalNodeData>) => {
   const handleNumericChange = (key: 'initialTemp' | 'heatCapacity' | 'fixedTemp') => (
     event: ChangeEvent<HTMLInputElement>,
   ) => {
-    const parsed = Number(event.target.value)
-
-    if (Number.isNaN(parsed)) {
+    const value = event.target.value
+    // 空文字列の場合は何もしない（削除中を許可）
+    if (value === '') {
       return
     }
-
-    editor?.onFieldChange(id, key, parsed as ThermalNodeData[typeof key])
+    const parsed = Number(value)
+    if (!Number.isNaN(parsed)) {
+      editor?.onFieldChange(id, key, parsed as ThermalNodeData[typeof key])
+    }
   }
 
   const handleFixedToggle = (event: ChangeEvent<HTMLInputElement>) => {
@@ -387,8 +420,7 @@ const ThermalNode = ({ id, data, selected }: NodeProps<ThermalNodeData>) => {
         <label className="thermal-node__field">
           <span>{UI_TEXT.fieldInitialTemp}</span>
           <input
-            type="number"
-            step="0.1"
+            type="text"
             value={data.initialTemp}
             disabled={data.isFixed}
             onChange={handleNumericChange('initialTemp')}
@@ -398,9 +430,7 @@ const ThermalNode = ({ id, data, selected }: NodeProps<ThermalNodeData>) => {
         <label className="thermal-node__field">
           <span>{UI_TEXT.fieldHeatCapacity}</span>
           <input
-            type="number"
-            min="0"
-            step="0.1"
+            type="text"
             value={data.heatCapacity}
             onChange={handleNumericChange('heatCapacity')}
             onPointerDown={(event) => event.stopPropagation()}
@@ -417,8 +447,7 @@ const ThermalNode = ({ id, data, selected }: NodeProps<ThermalNodeData>) => {
         <label className="thermal-node__field">
           <span>{UI_TEXT.fieldFixedTemp}</span>
           <input
-            type="number"
-            step="0.1"
+            type="text"
             value={data.fixedTemp}
             disabled={!data.isFixed}
             onChange={handleNumericChange('fixedTemp')}
@@ -452,13 +481,15 @@ const ThermalEdge = ({
   const transform = 'translate(-50%, -50%) translate(' + labelX + 'px, ' + labelY + 'px)'
 
   const handleConductanceChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const parsed = Number(event.target.value)
-
-    if (Number.isNaN(parsed)) {
+    const value = event.target.value
+    // 空文字列の場合は何もしない（削除中を許可）
+    if (value === '') {
       return
     }
-
-    edgeEditor?.onConductanceChange(id, parsed)
+    const parsed = Number(value)
+    if (!Number.isNaN(parsed)) {
+      edgeEditor?.onConductanceChange(id, parsed)
+    }
   }
 
   const handleRemove = () => {
@@ -493,9 +524,7 @@ const ThermalEdge = ({
         >
           <input
             className="thermal-edge-label__input"
-            type="number"
-            min="0"
-            step="0.1"
+            type="text"
             value={conductance}
             onChange={handleConductanceChange}
           />
@@ -530,6 +559,15 @@ const ThermalApp = () => {
   const [newEdgeConfig, setNewEdgeConfig] = useState<NewEdgeConfig>(() =>
     deriveEdgeDefaults(buildNodesFromModel(initialModel.nodes)),
   )
+
+  const [noiseLevel, setNoiseLevel] = useState(0.05)
+  const [sampleData, setSampleData] = useState<MeasurementData[]>([])
+  const [estimationSettings, setEstimationSettings] = useState({
+    maxIterations: 50,
+    tolerance: 0.01
+  })
+  const [estimationResult, setEstimationResult] = useState<ParameterEstimationResult | null>(null)
+  const [estimationInProgress, setEstimationInProgress] = useState(false)
 
   const nodesRef = useRef(nodes)
   const edgesRef = useRef(edges)
@@ -840,6 +878,158 @@ const ThermalApp = () => {
     }
   }, [simulationSettings, syncModel])
 
+  const handleGenerateSampleData = useCallback(() => {
+    try {
+      const modelNodes = nodesRef.current.map((node) => ({
+        id: node.id,
+        name: node.data.name,
+        initialTemp: node.data.initialTemp,
+        heatCapacity: node.data.heatCapacity,
+        isFixed: node.data.isFixed,
+        fixedTemp: node.data.fixedTemp,
+      }))
+
+      const modelEdges = edgesRef.current.map((edge) => ({
+        id: edge.id,
+        source: edge.source,
+        target: edge.target,
+        conductance: edge.data?.conductance ?? 0,
+      }))
+
+      // 現在のセットアップでシミュレーション実行
+      const simSettings: SimulationSettings = {
+        timeStep: simulationSettings.timeStep,
+        totalTime: simulationSettings.totalTime
+      }
+
+      const result = simulateThermalNetwork(modelNodes, modelEdges, simSettings)
+
+      // シミュレーション結果にノイズを追加してサンプルデータ生成
+      const generatedData: MeasurementData[] = result.series.map(series => {
+        const noisyTemperatures = series.temperatures.map(temp => {
+          const noise = (Math.random() - 0.5) * 2 * noiseLevel * Math.abs(temp)
+          return temp + noise
+        })
+
+        return {
+          nodeId: series.nodeId,
+          times: result.times,
+          temperatures: noisyTemperatures
+        }
+      })
+
+      setSampleData(generatedData)
+      setErrorMessage('')
+    } catch (error) {
+      if (error instanceof SimulationError) {
+        setErrorMessage(`サンプルデータ生成エラー: ${error.message}`)
+      } else {
+        setErrorMessage('サンプルデータの生成中にエラーが発生しました')
+      }
+      setSampleData([])
+    }
+  }, [noiseLevel, simulationSettings])
+
+  const handleRunSampleTest = useCallback(async () => {
+    if (sampleData.length === 0) {
+      handleGenerateSampleData()
+      return
+    }
+
+    setEstimationInProgress(true)
+    setEstimationResult(null)
+
+    try {
+      // 推定用の初期パラメータ（現在の値から少しずらした値）
+      const modelNodes = nodesRef.current.map((node) => ({
+        id: node.id,
+        name: node.data.name,
+        initialTemp: node.data.initialTemp,
+        heatCapacity: node.data.heatCapacity * (0.8 + Math.random() * 0.4), // ±20%の変動
+        isFixed: node.data.isFixed,
+        fixedTemp: node.data.fixedTemp,
+      }))
+
+      const modelEdges = edgesRef.current.map((edge) => ({
+        id: edge.id,
+        source: edge.source,
+        target: edge.target,
+        conductance: (edge.data?.conductance ?? 0) * (0.8 + Math.random() * 0.4), // ±20%の変動
+      }))
+
+      const settings: ParameterEstimationSettings = {
+        measurementData: sampleData,
+        optimizationSettings: estimationSettings
+      }
+
+      setTimeout(async () => {
+        try {
+          const result = estimateParameters(modelNodes, modelEdges, settings)
+          setEstimationResult(result)
+        } catch {
+          setErrorMessage('パラメータ推定でエラーが発生しました')
+        } finally {
+          setEstimationInProgress(false)
+        }
+      }, 100)
+    } catch {
+      setErrorMessage('パラメータ推定でエラーが発生しました')
+      setEstimationInProgress(false)
+    }
+  }, [sampleData, estimationSettings, handleGenerateSampleData])
+
+  const handleApplyEstimatedParameters = useCallback(() => {
+    if (!estimationResult) return
+
+    try {
+      // ノードのパラメータを更新
+      const updatedNodes = nodesRef.current.map(node => {
+        const estimatedHeatCapacity = estimationResult.estimatedHeatCapacities[node.id]
+        if (estimatedHeatCapacity !== undefined) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              heatCapacity: estimatedHeatCapacity
+            }
+          }
+        }
+        return node
+      })
+
+      // エッジのパラメータを更新
+      const updatedEdges = edgesRef.current.map(edge => {
+        const estimatedConductance = estimationResult.estimatedConductances[edge.id]
+        if (estimatedConductance !== undefined) {
+          return {
+            ...edge,
+            data: {
+              ...edge.data,
+              conductance: estimatedConductance
+            }
+          }
+        }
+        return edge
+      })
+
+      // 状態を更新
+      setNodes(updatedNodes.map(decorateNode))
+      setEdges(updatedEdges)
+
+      // モデルを同期
+      syncModel(updatedNodes, updatedEdges)
+
+      // 成功メッセージを表示
+      setErrorMessage('')
+
+      // 推定結果をクリア（適用済みなので）
+      setEstimationResult(null)
+
+    } catch {
+      setErrorMessage('パラメータの適用中にエラーが発生しました')
+    }
+  }, [estimationResult, syncModel])
+
   const exportModelToJson = useCallback(() => {
     const model = buildModelFromState(nodesRef.current, edgesRef.current)
     const blob = new Blob([JSON.stringify(model, null, 2)], {
@@ -958,6 +1148,11 @@ const ThermalApp = () => {
       <header className="app-header">
         <h1>{UI_TEXT.headerTitle}</h1>
         <p>{UI_TEXT.headerSubtitle}</p>
+        <div className="app-header__links">
+          <a href="./docs.html" target="_blank" rel="noopener noreferrer" className="docs-link">
+            📖 ReadMe
+          </a>
+        </div>
       </header>
       <div className="app-main">
         <aside className="control-panel">
@@ -1001,33 +1196,32 @@ const ThermalApp = () => {
                         <label>
                           {UI_TEXT.fieldInitialTemp}
                           <input
-                            type="number"
-                            step="0.1"
+                            type="text"
                             value={data.initialTemp}
-                            onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                              handleNodeFieldChange(
-                                node.id,
-                                'initialTemp',
-                                Number(event.target.value),
-                              )
-                            }
+                            onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                              const value = event.target.value
+                              if (value === '') return
+                              const parsed = Number(value)
+                              if (!Number.isNaN(parsed)) {
+                                handleNodeFieldChange(node.id, 'initialTemp', parsed)
+                              }
+                            }}
                             disabled={data.isFixed}
                           />
                         </label>
                         <label>
                           {UI_TEXT.fieldHeatCapacity}
                           <input
-                            type="number"
-                            min="0"
-                            step="0.1"
+                            type="text"
                             value={data.heatCapacity}
-                            onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                              handleNodeFieldChange(
-                                node.id,
-                                'heatCapacity',
-                                Number(event.target.value),
-                              )
-                            }
+                            onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                              const value = event.target.value
+                              if (value === '') return
+                              const parsed = Number(value)
+                              if (!Number.isNaN(parsed)) {
+                                handleNodeFieldChange(node.id, 'heatCapacity', parsed)
+                              }
+                            }}
                           />
                         </label>
                         <label className="checkbox">
@@ -1043,16 +1237,16 @@ const ThermalApp = () => {
                         <label>
                           {UI_TEXT.fieldFixedTemp}
                           <input
-                            type="number"
-                            step="0.1"
+                            type="text"
                             value={data.fixedTemp}
-                            onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                              handleNodeFieldChange(
-                                node.id,
-                                'fixedTemp',
-                                Number(event.target.value),
-                              )
-                            }
+                            onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                              const value = event.target.value
+                              if (value === '') return
+                              const parsed = Number(value)
+                              if (!Number.isNaN(parsed)) {
+                                handleNodeFieldChange(node.id, 'fixedTemp', parsed)
+                              }
+                            }}
                             disabled={!data.isFixed}
                           />
                         </label>
@@ -1111,16 +1305,16 @@ const ThermalApp = () => {
               <label>
                 {UI_TEXT.conductance}
                 <input
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  value={newEdgeConfig.conductance}
-                  onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                    setNewEdgeConfig((prev) => ({
-                      ...prev,
-                      conductance: Number(event.target.value),
-                    }))
-                  }
+                  type="text"
+                                                      value={newEdgeConfig.conductance}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                    const value = event.target.value
+                    if (value === '') return
+                    const parsed = Number(value)
+                    if (!Number.isNaN(parsed)) {
+                      setNewEdgeConfig((prev) => ({ ...prev, conductance: parsed }))
+                    }
+                  }}
                 />
               </label>
               <button className="primary" type="submit" disabled={disableEdgeCreation}>
@@ -1141,13 +1335,16 @@ const ThermalApp = () => {
                       </div>
                       <div className="edge-list__controls">
                         <input
-                          type="number"
-                          min="0"
-                          step="0.1"
-                          value={edge.data?.conductance ?? 0}
-                          onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                            handleEdgeConductanceChange(edge.id, Number(event.target.value))
-                          }
+                          type="text"
+                                                                              value={edge.data?.conductance ?? 0}
+                          onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                            const value = event.target.value
+                            if (value === '') return
+                            const parsed = Number(value)
+                            if (!Number.isNaN(parsed)) {
+                              handleEdgeConductanceChange(edge.id, parsed)
+                            }
+                          }}
                         />
                         <span className="edge-list__unit">W/K</span>
                         <button
@@ -1166,30 +1363,212 @@ const ThermalApp = () => {
           </section>
 
           <section className="panel-section">
+            <h2>{UI_TEXT.parameterEstimation}</h2>
+            <div className="panel-section__body">
+              <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#f8fafc', borderRadius: '0.5rem', fontSize: '0.85rem' }}>
+                <strong>サンプルデータ生成:</strong><br />
+                現在のノード・エッジ設定でシミュレーションを実行し、結果にノイズを加えてサンプルデータを作成します。
+              </div>
+              <label>
+                {UI_TEXT.noiseLevel}
+                <input
+                  type="text"
+                                                                        value={noiseLevel}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                    const value = event.target.value
+                    if (value === '') return
+                    const parsed = Number(value)
+                    if (!Number.isNaN(parsed)) {
+                      setNoiseLevel(parsed)
+                    }
+                  }}
+                />
+              </label>
+              <button
+                className="primary"
+                type="button"
+                onClick={handleGenerateSampleData}
+                style={{ marginTop: '0.5rem' }}
+              >
+                {UI_TEXT.generateData}
+              </button>
+
+              {sampleData.length > 0 && (
+                <div style={{ marginTop: '1rem' }}>
+                  <h4>生成されたサンプルデータ:</h4>
+                  <div style={{ maxHeight: '200px', overflowY: 'auto', fontSize: '0.8rem', border: '1px solid #e2e8f0', borderRadius: '0.5rem', padding: '0.5rem' }}>
+                    {sampleData.map((data, index) => {
+                      const nodeName = nodes.find(n => n.id === data.nodeId)?.data.name || data.nodeId
+                      return (
+                        <div key={index} style={{ marginBottom: '0.75rem' }}>
+                          <strong>{nodeName} ({data.nodeId}):</strong>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))', gap: '0.25rem', marginTop: '0.25rem' }}>
+                            {data.times.slice(0, 10).map((time, timeIndex) => (
+                              <div key={timeIndex} style={{ fontSize: '0.75rem' }}>
+                                t={time}s: {data.temperatures[timeIndex].toFixed(1)}℃
+                              </div>
+                            ))}
+                            {data.times.length > 10 && (
+                              <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+                                ... +{data.times.length - 10} more
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <div className="form-grid" style={{ marginTop: '1rem' }}>
+                <label>
+                  {UI_TEXT.maxIterations}
+                  <input
+                    type="text"
+                                                                                value={estimationSettings.maxIterations}
+                    onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                      const value = event.target.value
+                      if (value === '') return
+                      const parsed = Number(value)
+                      if (!Number.isNaN(parsed)) {
+                        setEstimationSettings(prev => ({ ...prev, maxIterations: parsed }))
+                      }
+                    }}
+                  />
+                </label>
+                <label>
+                  {UI_TEXT.tolerance}
+                  <input
+                    type="text"
+                                                            step="0.001"
+                    value={estimationSettings.tolerance}
+                    onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                      const value = event.target.value
+                      if (value === '') return
+                      const parsed = Number(value)
+                      if (!Number.isNaN(parsed)) {
+                        setEstimationSettings(prev => ({ ...prev, tolerance: parsed }))
+                      }
+                    }}
+                  />
+                </label>
+              </div>
+
+              <button
+                className="primary"
+                type="button"
+                onClick={handleRunSampleTest}
+                disabled={estimationInProgress}
+                style={{ marginTop: '0.5rem' }}
+              >
+                {estimationInProgress ? '推定中...' : UI_TEXT.runSampleTest}
+              </button>
+
+              {estimationResult && (
+                <div style={{ marginTop: '1rem' }}>
+                  <h3>{UI_TEXT.estimationResults}</h3>
+                  <div className="form-grid" style={{ fontSize: '0.85rem' }}>
+                    <div>
+                      <strong>{UI_TEXT.convergenceInfo}:</strong>
+                      <br />
+                      {UI_TEXT.iterations}: {estimationResult.convergenceInfo.iterations}
+                      <br />
+                      {estimationResult.convergenceInfo.converged ? UI_TEXT.converged : UI_TEXT.notConverged}
+                      <br />
+                      {UI_TEXT.finalError}: {estimationResult.convergenceInfo.finalError.toFixed(4)}
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: '0.5rem', fontSize: '0.85rem' }}>
+                    <strong>パラメータ比較:</strong>
+                    <table style={{ width: '100%', marginTop: '0.25rem', fontSize: '0.8rem' }}>
+                      <thead>
+                        <tr>
+                          <th>パラメータ</th>
+                          <th>現在値</th>
+                          <th>推定値</th>
+                          <th>誤差%</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {nodes.map((node) => {
+                          const currentValue = node.data.heatCapacity
+                          const estimated = estimationResult.estimatedHeatCapacities[node.id]
+                          const error = estimated ? Math.abs((estimated - currentValue) / currentValue * 100) : 0
+                          return (
+                            <tr key={node.id}>
+                              <td>HC_{node.data.name}</td>
+                              <td>{currentValue.toFixed(1)}</td>
+                              <td>{estimated?.toFixed(1)}</td>
+                              <td>{error.toFixed(1)}%</td>
+                            </tr>
+                          )
+                        })}
+                        {edges.map((edge) => {
+                          const currentValue = edge.data?.conductance ?? 0
+                          const estimated = estimationResult.estimatedConductances[edge.id]
+                          const error = estimated && currentValue > 0 ? Math.abs((estimated - currentValue) / currentValue * 100) : 0
+                          const sourceNode = nodes.find(n => n.id === edge.source)
+                          const targetNode = nodes.find(n => n.id === edge.target)
+                          const edgeName = `${sourceNode?.data.name || edge.source}-${targetNode?.data.name || edge.target}`
+                          return (
+                            <tr key={edge.id}>
+                              <td>G_{edgeName}</td>
+                              <td>{currentValue.toFixed(1)}</td>
+                              <td>{estimated?.toFixed(1)}</td>
+                              <td>{error.toFixed(1)}%</td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <button
+                    className="primary"
+                    type="button"
+                    onClick={handleApplyEstimatedParameters}
+                    style={{ marginTop: '1rem', width: '100%' }}
+                  >
+                    {UI_TEXT.applyEstimatedParams}
+                  </button>
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section className="panel-section">
             <h2>{UI_TEXT.simulationSettings}</h2>
             <div className="form-grid">
               <label>
                 {UI_TEXT.timeStep}
                 <input
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  value={simulationSettings.timeStep}
-                  onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                    handleSimulationSettingChange('timeStep', Number(event.target.value))
-                  }
+                  type="text"
+                                                      value={simulationSettings.timeStep}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                    const value = event.target.value
+                    if (value === '') return
+                    const parsed = Number(value)
+                    if (!Number.isNaN(parsed)) {
+                      handleSimulationSettingChange('timeStep', parsed)
+                    }
+                  }}
                 />
               </label>
               <label>
                 {UI_TEXT.totalTime}
                 <input
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  value={simulationSettings.totalTime}
-                  onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                    handleSimulationSettingChange('totalTime', Number(event.target.value))
-                  }
+                  type="text"
+                                                      value={simulationSettings.totalTime}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                    const value = event.target.value
+                    if (value === '') return
+                    const parsed = Number(value)
+                    if (!Number.isNaN(parsed)) {
+                      handleSimulationSettingChange('totalTime', parsed)
+                    }
+                  }}
                 />
               </label>
             </div>
@@ -1248,17 +1627,37 @@ const ThermalApp = () => {
           </section>
 
           <section className="plot-wrapper">
-            {simulationResult ? (
+            {(simulationResult || sampleData.length > 0) ? (
               <Plot
-                data={simulationResult.series.map((series) => ({
-                  x: simulationResult.times,
-                  y: series.temperatures,
-                  type: 'scatter',
-                  mode: 'lines+markers',
-                  name: series.name,
-                }))}
+                data={[
+                  // シミュレーション結果
+                  ...(simulationResult ? simulationResult.series.map((series) => ({
+                    x: simulationResult.times,
+                    y: series.temperatures,
+                    type: 'scatter' as const,
+                    mode: 'lines+markers' as const,
+                    name: `${series.name} (シミュレーション)`,
+                    line: { width: 2 },
+                  })) : []),
+                  // サンプルデータ
+                  ...sampleData.map((data) => {
+                    const nodeName = nodes.find(n => n.id === data.nodeId)?.data.name || data.nodeId
+                    return {
+                      x: data.times,
+                      y: data.temperatures,
+                      type: 'scatter' as const,
+                      mode: 'markers' as const,
+                      name: `${nodeName} (サンプルデータ)`,
+                      marker: {
+                        size: 6,
+                        symbol: 'circle-open',
+                        line: { width: 2 }
+                      },
+                    }
+                  })
+                ]}
                 layout={{
-                  title: { text: UI_TEXT.graphTitle },
+                  title: { text: simulationResult ? UI_TEXT.graphTitle : 'サンプルデータ' },
                   xaxis: { title: { text: UI_TEXT.axisTime } },
                   yaxis: { title: { text: UI_TEXT.axisTemp } },
                   legend: { orientation: 'h', y: -0.2 },

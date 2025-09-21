@@ -48,6 +48,31 @@ button {
   opacity: 0.82;
 }
 
+.app-header__links {
+  margin-top: 1rem;
+  display: flex;
+  gap: 1rem;
+}
+
+.docs-link {
+  color: #f8fafc;
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  border: 1px solid rgba(248, 250, 252, 0.3);
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.docs-link:hover {
+  background: rgba(248, 250, 252, 0.1);
+  border-color: rgba(248, 250, 252, 0.5);
+  transform: translateY(-1px);
+}
+
 .app-main {
   flex: 1;
   display: grid;
@@ -105,6 +130,15 @@ button {
 }
 
 .node-list::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 999px;
+}
+
+.edge-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.edge-list::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
   border-radius: 999px;
 }
@@ -242,9 +276,12 @@ textarea:focus {
   list-style: none;
   margin: 0;
   padding: 0;
+  padding-right: 0.35rem;
   display: flex;
   flex-direction: column;
   gap: 0.65rem;
+  max-height: 340px;
+  overflow-y: auto;
 }
 
 .edge-list__item {
@@ -323,7 +360,7 @@ textarea:focus {
 
 .workspace {
   display: grid;
-  grid-template-rows: minmax(420px, 1fr) 320px;
+  grid-template-rows: minmax(300px, 0.7fr) minmax(200px, 1fr);
   gap: 1.25rem;
 }
 
@@ -367,7 +404,7 @@ textarea:focus {
   }
 
   .workspace {
-    grid-template-rows: minmax(380px, 1fr) 300px;
+    grid-template-rows: minmax(270px, 0.7fr) minmax(200px, 1fr);
   }
 }
 
@@ -381,7 +418,7 @@ textarea:focus {
   }
 
   .workspace {
-    grid-template-rows: minmax(320px, 1fr) 280px;
+    grid-template-rows: minmax(230px, 0.7fr) minmax(180px, 1fr);
   }
 }
 .thermal-node {
